@@ -30,7 +30,7 @@
 package mips
 
 import (
-	"github.com/twitchyliquid64/golang-asm/obj"
+	"github.com/alicemare/golang-asm-v1.25/obj"
 )
 
 //go:generate go run ../stringer.go -i $GOFILE -o anames.go -p mips
@@ -275,6 +275,7 @@ const (
 	NSCHED = 20
 )
 
+//go:generate go run ../mkcnames.go -i a.out.go -o anames0.go -p mips
 const (
 	C_NONE = iota
 	C_REG
@@ -390,8 +391,12 @@ const (
 	AREM
 	AREMU
 	ARFE
+	AROTR
+	AROTRV
 	ASC
 	ASCV
+	ASEB
+	ASEH
 	ASGT
 	ASGTU
 	ASLL
@@ -413,6 +418,7 @@ const (
 	ATLBWR
 	ATNE
 	AWORD
+	AWSBH
 	AXOR
 
 	/* 64-bit */
@@ -432,6 +438,8 @@ const (
 	AADDVU
 	ASUBV
 	ASUBVU
+	ADSBH
+	ADSHD
 
 	/* 64-bit FP */
 	ATRUNCFV

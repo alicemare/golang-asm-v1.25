@@ -2,7 +2,7 @@
 
 package s390x
 
-import "github.com/twitchyliquid64/golang-asm/obj"
+import "github.com/alicemare/golang-asm-v1.25/obj"
 
 var Anames = []string{
 	obj.A_ARCHSPECIFIC: "ADD",
@@ -96,6 +96,7 @@ var Anames = []string{
 	"FNABS",
 	"FNEG",
 	"FNEGS",
+	"LCDBR",
 	"LEDBR",
 	"LDEBR",
 	"LPDFR",
@@ -207,6 +208,13 @@ var Anames = []string{
 	"STCKE",
 	"STCKF",
 	"CLEAR",
+	"KM",
+	"KMC",
+	"KLMD",
+	"KIMD",
+	"KDSA",
+	"KMA",
+	"KMCTR",
 	"VA",
 	"VAB",
 	"VAH",
@@ -716,5 +724,6 @@ var Anames = []string{
 	"BYTE",
 	"WORD",
 	"DWORD",
+	"BRRK",
 	"LAST",
 }

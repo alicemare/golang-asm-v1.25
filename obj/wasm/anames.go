@@ -2,11 +2,10 @@
 
 package wasm
 
-import "github.com/twitchyliquid64/golang-asm/obj"
+import "github.com/alicemare/golang-asm-v1.25/obj"
 
 var Anames = []string{
-	obj.A_ARCHSPECIFIC: "CallImport",
-	"Get",
+	obj.A_ARCHSPECIFIC: "Get",
 	"Set",
 	"Tee",
 	"Not",
@@ -195,6 +194,16 @@ var Anames = []string{
 	"I64TruncSatF32U",
 	"I64TruncSatF64S",
 	"I64TruncSatF64U",
+	"MemoryInit",
+	"DataDrop",
+	"MemoryCopy",
+	"MemoryFill",
+	"TableInit",
+	"ElemDrop",
+	"TableCopy",
+	"TableGrow",
+	"TableSize",
+	"TableFill",
 	"Last",
 	"RESUMEPOINT",
 	"CALLNORESUME",

@@ -9,8 +9,8 @@
 package arch
 
 import (
-	"github.com/twitchyliquid64/golang-asm/obj"
-	"github.com/twitchyliquid64/golang-asm/obj/mips"
+	"github.com/alicemare/golang-asm-v1.25/obj"
+	"github.com/alicemare/golang-asm-v1.25/obj/mips"
 )
 
 func jumpMIPS(word string) bool {

@@ -2,7 +2,7 @@
 
 package arm
 
-import "github.com/twitchyliquid64/golang-asm/obj"
+import "github.com/alicemare/golang-asm-v1.25/obj"
 
 var Anames = []string{
 	obj.A_ARCHSPECIFIC: "AND",
@@ -117,7 +117,9 @@ var Anames = []string{
 	"LDREX",
 	"STREX",
 	"LDREXD",
+	"LDREXB",
 	"STREXD",
+	"STREXB",
 	"DMB",
 	"PLD",
 	"CLZ",

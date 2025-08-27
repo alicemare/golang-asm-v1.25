@@ -31,18 +31,18 @@
 package x86
 
 import (
-	"github.com/twitchyliquid64/golang-asm/obj"
-	"github.com/twitchyliquid64/golang-asm/objabi"
-	"github.com/twitchyliquid64/golang-asm/sys"
+	"github.com/alicemare/golang-asm-v1.25/obj"
+	"github.com/alicemare/golang-asm-v1.25/objabi"
+	"github.com/alicemare/golang-asm-v1.25/sys"
 	"encoding/binary"
 	"fmt"
+	"github.com/alicemare/golang-asm-v1.25/buildcfg"
 	"log"
 	"strings"
 )
 
 var (
 	plan9privates *obj.LSym
-	deferreturn   *obj.LSym
 )
 
 // Instruction layout.
@@ -59,7 +59,6 @@ var (
 // is very slight but negative, so the alignment is disabled by
 // setting MaxLoopPad = 0. The code is here for reference and
 // for future experiments.
-//
 const (
 	loopAlign  = 16
 	maxLoopPad = 0
@@ -302,7 +301,7 @@ const (
 	Py   = 0x80 // defaults to 64-bit mode
 	Py1  = 0x81 // symbolic; exact value doesn't matter
 	Py3  = 0x83 // symbolic; exact value doesn't matter
-	Pavx = 0x84 // symbolic: exact value doesn't matter
+	Pavx = 0x84 // symbolic; exact value doesn't matter
 
 	RxrEvex = 1 << 4 // AVX512 extension to REX.R/VEX.R
 	Rxw     = 1 << 3 // =1, 64-bit operand size
@@ -776,7 +775,7 @@ var ymshufb = []ytab{
 }
 
 // It should never have more than 1 entry,
-// because some optab entries you opcode secuences that
+// because some optab entries have opcode sequences that
 // are longer than 2 bytes (zoffset=2 here),
 // ROUNDPD and ROUNDPS and recently added BLENDPD,
 // to name a few.
@@ -873,9 +872,9 @@ var ysha1rnds4 = []ytab{
 // up in instinit.  For example, oclass distinguishes the constants 0 and 1
 // from the more general 8-bit constants, but instinit says
 //
-//        ycover[Yi0*Ymax+Ys32] = 1
-//        ycover[Yi1*Ymax+Ys32] = 1
-//        ycover[Yi8*Ymax+Ys32] = 1
+//	ycover[Yi0*Ymax+Ys32] = 1
+//	ycover[Yi1*Ymax+Ys32] = 1
+//	ycover[Yi8*Ymax+Ys32] = 1
 //
 // which means that Yi0, Yi1, and Yi8 all count as Ys32 (signed 32)
 // if that's what an instruction can handle.
@@ -889,26 +888,28 @@ var ysha1rnds4 = []ytab{
 // is, the Ztype) and the z bytes.
 //
 // For example, let's look at AADDL.  The optab line says:
-//        {AADDL, yaddl, Px, opBytes{0x83, 00, 0x05, 0x81, 00, 0x01, 0x03}},
+//
+//	{AADDL, yaddl, Px, opBytes{0x83, 00, 0x05, 0x81, 00, 0x01, 0x03}},
 //
 // and yaddl says
-//        var yaddl = []ytab{
-//                {Yi8, Ynone, Yml, Zibo_m, 2},
-//                {Yi32, Ynone, Yax, Zil_, 1},
-//                {Yi32, Ynone, Yml, Zilo_m, 2},
-//                {Yrl, Ynone, Yml, Zr_m, 1},
-//                {Yml, Ynone, Yrl, Zm_r, 1},
-//        }
+//
+//	var yaddl = []ytab{
+//	        {Yi8, Ynone, Yml, Zibo_m, 2},
+//	        {Yi32, Ynone, Yax, Zil_, 1},
+//	        {Yi32, Ynone, Yml, Zilo_m, 2},
+//	        {Yrl, Ynone, Yml, Zr_m, 1},
+//	        {Yml, Ynone, Yrl, Zm_r, 1},
+//	}
 //
 // so there are 5 possible types of ADDL instruction that can be laid down, and
 // possible states used to lay them down (Ztype and z pointer, assuming z
 // points at opBytes{0x83, 00, 0x05,0x81, 00, 0x01, 0x03}) are:
 //
-//        Yi8, Yml -> Zibo_m, z (0x83, 00)
-//        Yi32, Yax -> Zil_, z+2 (0x05)
-//        Yi32, Yml -> Zilo_m, z+2+1 (0x81, 0x00)
-//        Yrl, Yml -> Zr_m, z+2+1+2 (0x01)
-//        Yml, Yrl -> Zm_r, z+2+1+2+1 (0x03)
+//	Yi8, Yml -> Zibo_m, z (0x83, 00)
+//	Yi32, Yax -> Zil_, z+2 (0x05)
+//	Yi32, Yml -> Zilo_m, z+2+1 (0x81, 0x00)
+//	Yrl, Yml -> Zr_m, z+2+1+2 (0x01)
+//	Yml, Yrl -> Zm_r, z+2+1+2+1 (0x03)
 //
 // The Pconstant in the optab line controls the prefix bytes to emit.  That's
 // relatively straightforward as this program goes.
@@ -918,7 +919,7 @@ var ysha1rnds4 = []ytab{
 // encoded addressing mode for the Yml arg), and then a single immediate byte.
 // Zilo_m is the same but a long (32-bit) immediate.
 var optab =
-//	as, ytab, andproto, opcode
+// as, ytab, andproto, opcode
 [...]Optab{
 	{obj.AXXX, nil, 0, opBytes{}},
 	{AAAA, ynone, P32, opBytes{0x37}},
@@ -1095,6 +1096,7 @@ var optab =
 	{ADPPD, yxshuf, Pq, opBytes{0x3a, 0x41, 0}},
 	{ADPPS, yxshuf, Pq, opBytes{0x3a, 0x40, 0}},
 	{AEMMS, ynone, Pm, opBytes{0x77}},
+	{AENDBR64, ynone, Pf3, opBytes{0x1e, 0xfa}},
 	{AEXTRACTPS, yextractps, Pq, opBytes{0x3a, 0x17, 0}},
 	{AENTER, nil, 0, opBytes{}}, // botch
 	{AFXRSTOR, ysvrs_mo, Pm, opBytes{0xae, 01, 0xae, 01}},
@@ -1735,9 +1737,9 @@ var optab =
 	{ASTRL, yincq, Px, opBytes{0x0f, 0x00, 01}},
 	{ASTRQ, yincq, Pw, opBytes{0x0f, 0x00, 01}},
 	{AXSETBV, ynone, Pm, opBytes{0x01, 0xd1, 0}},
-	{AMOVBEWW, ymovbe, Pq, opBytes{0x38, 0xf0, 0, 0x38, 0xf1, 0}},
-	{AMOVBELL, ymovbe, Pm, opBytes{0x38, 0xf0, 0, 0x38, 0xf1, 0}},
-	{AMOVBEQQ, ymovbe, Pw, opBytes{0x0f, 0x38, 0xf0, 0, 0x0f, 0x38, 0xf1, 0}},
+	{AMOVBEW, ymovbe, Pq, opBytes{0x38, 0xf0, 0, 0x38, 0xf1, 0}},
+	{AMOVBEL, ymovbe, Pm, opBytes{0x38, 0xf0, 0, 0x38, 0xf1, 0}},
+	{AMOVBEQ, ymovbe, Pw, opBytes{0x0f, 0x38, 0xf0, 0, 0x0f, 0x38, 0xf1, 0}},
 	{ANOPW, ydivl, Pe, opBytes{0x0f, 0x1f, 00}},
 	{ANOPL, ydivl, Px, opBytes{0x0f, 0x1f, 00}},
 	{ASLDTW, yincq, Pe, opBytes{0x0f, 0x00, 00}},
@@ -1773,6 +1775,7 @@ var optab =
 	{ALSSW, ym_rl, Pe, opBytes{0x0f, 0xb2}},
 	{ALSSL, ym_rl, Px, opBytes{0x0f, 0xb2}},
 	{ALSSQ, ym_rl, Pw, opBytes{0x0f, 0xb2}},
+	{ARDPID, yrdrand, Pf3, opBytes{0xc7, 07}},
 
 	{ABLENDPD, yxshuf, Pq, opBytes{0x3a, 0x0d, 0}},
 	{ABLENDPS, yxshuf, Pq, opBytes{0x3a, 0x0c, 0}},
@@ -1851,9 +1854,9 @@ func spadjop(ctxt *obj.Link, l, q obj.As) obj.As {
 	return q
 }
 
-// If the environment variable GOAMD64=alignedjumps the assembler will ensure that
-// no standalone or macro-fused jump will straddle or end on a 32 byte boundary
-// by inserting NOPs before the jumps
+// isJump returns whether p is a jump instruction.
+// It is used to ensure that no standalone or macro-fused jump will straddle
+// or end on a 32 byte boundary by inserting NOPs before the jumps.
 func isJump(p *obj.Prog) bool {
 	return p.To.Target() != nil || p.As == obj.AJMP || p.As == obj.ACALL ||
 		p.As == obj.ARET || p.As == obj.ADUFFCOPY || p.As == obj.ADUFFZERO
@@ -1887,7 +1890,7 @@ func lookForJCC(p *obj.Prog) *obj.Prog {
 func fusedJump(p *obj.Prog) (bool, uint8) {
 	var fusedSize uint8
 
-	// The first instruction in a macro fused pair may be preceeded by the LOCK prefix,
+	// The first instruction in a macro fused pair may be preceded by the LOCK prefix,
 	// or possibly an XACQUIRE/XRELEASE prefix followed by a LOCK prefix. If it is, we
 	// need to be careful to insert any padding before the locks rather than directly after them.
 
@@ -1976,7 +1979,7 @@ func fusedJump(p *obj.Prog) (bool, uint8) {
 type padJumpsCtx int32
 
 func makePjcCtx(ctxt *obj.Link) padJumpsCtx {
-	// Disable jump padding on 32 bit builds by settting
+	// Disable jump padding on 32 bit builds by setting
 	// padJumps to 0.
 	if ctxt.Arch.Family == sys.I386 {
 		return padJumpsCtx(0)
@@ -1985,11 +1988,6 @@ func makePjcCtx(ctxt *obj.Link) padJumpsCtx {
 	// Disable jump padding for hand written assembly code.
 	if ctxt.IsAsm {
 		return padJumpsCtx(0)
-	}
-
-	if objabi.GOAMD64 != "alignedjumps" {
-		return padJumpsCtx(0)
-
 	}
 
 	return padJumpsCtx(32)
@@ -2039,7 +2037,29 @@ type nopPad struct {
 	n int32     // Size of the pad
 }
 
+// requireAlignment ensures that the function alignment is at
+// least as high as a, which should be a power of two
+// and between 8 and 2048, inclusive.
+//
+// the boolean result indicates whether the alignment meets those constraints
+func requireAlignment(a int64, ctxt *obj.Link, cursym *obj.LSym) bool {
+	if !((a&(a-1) == 0) && 8 <= a && a <= 2048) {
+		ctxt.Diag("alignment value of an instruction must be a power of two and in the range [8, 2048], got %d\n", a)
+		return false
+	}
+	// By default function alignment is 32 bytes for amd64
+	if cursym.Func().Align < int32(a) {
+		cursym.Func().Align = int32(a)
+	}
+	return true
+}
+
 func span6(ctxt *obj.Link, s *obj.LSym, newprog obj.ProgAlloc) {
+	if ctxt.Retpoline && ctxt.Arch.Family == sys.I386 {
+		ctxt.Diag("-spectre=ret not supported on 386")
+		ctxt.Retpoline = false // don't keep printing
+	}
+
 	pjc := makePjcCtx(ctxt)
 
 	if s.P != nil {
@@ -2050,7 +2070,7 @@ func span6(ctxt *obj.Link, s *obj.LSym, newprog obj.ProgAlloc) {
 		ctxt.Diag("x86 tables not initialized, call x86.instinit first")
 	}
 
-	for p := s.Func.Text; p != nil; p = p.Link {
+	for p := s.Func().Text; p != nil; p = p.Link {
 		if p.To.Type == obj.TYPE_BRANCH && p.To.Target() == nil {
 			p.To.SetTarget(p)
 		}
@@ -2085,7 +2105,7 @@ func span6(ctxt *obj.Link, s *obj.LSym, newprog obj.ProgAlloc) {
 	}
 
 	var count int64 // rough count of number of instructions
-	for p := s.Func.Text; p != nil; p = p.Link {
+	for p := s.Func().Text; p != nil; p = p.Link {
 		count++
 		p.Back = branchShort // use short branches first time through
 		if q := p.To.Target(); q != nil && (q.Back&branchShort != 0) {
@@ -2100,21 +2120,35 @@ func span6(ctxt *obj.Link, s *obj.LSym, newprog obj.ProgAlloc) {
 	var c int32
 	errors := ctxt.Errors
 	var nops []nopPad // Padding for a particular assembly (reuse slice storage if multiple assemblies)
+	nrelocs0 := len(s.R)
 	for {
 		// This loop continues while there are reasons to re-assemble
 		// whole block, like the presence of long forward jumps.
 		reAssemble := false
-		for i := range s.R {
-			s.R[i] = obj.Reloc{}
+		for i := range s.R[nrelocs0:] {
+			s.R[nrelocs0+i] = obj.Reloc{}
 		}
-		s.R = s.R[:0]
+		s.R = s.R[:nrelocs0] // preserve marker relocations generated by the compiler
 		s.P = s.P[:0]
 		c = 0
 		var pPrev *obj.Prog
 		nops = nops[:0]
-		for p := s.Func.Text; p != nil; p = p.Link {
+		for p := s.Func().Text; p != nil; p = p.Link {
 			c0 := c
 			c = pjc.padJump(ctxt, s, p, c)
+
+			if p.As == obj.APCALIGN || p.As == obj.APCALIGNMAX {
+				v := obj.AlignmentPadding(c, p, ctxt, s)
+				if v > 0 {
+					s.Grow(int64(c) + int64(v))
+					fillnop(s.P[c:], int(v))
+				}
+				p.Pc = int64(c)
+				c += int32(v)
+				pPrev = p
+				continue
+
+			}
 
 			if maxLoopPad > 0 && p.Back&branchLoopHead != 0 && c&(loopAlign-1) != 0 {
 				// pad with NOPs
@@ -2173,7 +2207,7 @@ func span6(ctxt *obj.Link, s *obj.LSym, newprog obj.ProgAlloc) {
 		}
 
 		n++
-		if n > 20 {
+		if n > 1000 {
 			ctxt.Diag("span must be looping")
 			log.Fatalf("loop")
 		}
@@ -2226,7 +2260,17 @@ func span6(ctxt *obj.Link, s *obj.LSym, newprog obj.ProgAlloc) {
 			// the first instruction.)
 			return p.From.Index == REG_TLS
 		}
-		obj.MarkUnsafePoints(ctxt, s.Func.Text, newprog, useTLS, nil)
+		obj.MarkUnsafePoints(ctxt, s.Func().Text, newprog, useTLS, nil)
+	}
+
+	// Now that we know byte offsets, we can generate jump table entries.
+	// TODO: could this live in obj instead of obj/$ARCH?
+	for _, jt := range s.Func().JumpTables {
+		for i, p := range jt.Targets {
+			// The ith jumptable entry points to the p.Pc'th
+			// byte in the function symbol s.
+			jt.Sym.WriteAddr(ctxt, int64(i)*8, 8, s, p.Pc)
+		}
 	}
 }
 
@@ -2464,7 +2508,7 @@ func instinit(ctxt *obj.Link) {
 	}
 }
 
-var isAndroid = objabi.GOOS == "android"
+var isAndroid = buildcfg.GOOS == "android"
 
 func prefixof(ctxt *obj.Link, a *obj.Addr) int {
 	if a.Reg < REG_CS && a.Index < REG_CS { // fast path
@@ -2539,22 +2583,6 @@ func prefixof(ctxt *obj.Link, a *obj.Addr) int {
 		}
 	}
 
-	if ctxt.Arch.Family == sys.I386 {
-		if a.Index == REG_TLS && ctxt.Flag_shared {
-			// When building for inclusion into a shared library, an instruction of the form
-			//     MOVL off(CX)(TLS*1), AX
-			// becomes
-			//     mov %gs:off(%ecx), %eax
-			// which assumes that the correct TLS offset has been loaded into %ecx (today
-			// there is only one TLS variable -- g -- so this is OK). When not building for
-			// a shared library the instruction it becomes
-			//     mov 0x0(%ecx), %eax
-			// and a R_TLS_LE relocation, and so does not require a prefix.
-			return 0x65 // GS
-		}
-		return 0
-	}
-
 	switch a.Index {
 	case REG_CS:
 		return 0x2e
@@ -2570,11 +2598,18 @@ func prefixof(ctxt *obj.Link, a *obj.Addr) int {
 			// When building for inclusion into a shared library, an instruction of the form
 			//     MOV off(CX)(TLS*1), AX
 			// becomes
-			//     mov %fs:off(%rcx), %rax
-			// which assumes that the correct TLS offset has been loaded into %rcx (today
+			//     mov %gs:off(%ecx), %eax // on i386
+			//     mov %fs:off(%rcx), %rax // on amd64
+			// which assumes that the correct TLS offset has been loaded into CX (today
 			// there is only one TLS variable -- g -- so this is OK). When not building for
-			// a shared library the instruction does not require a prefix.
-			return 0x64
+			// a shared library the instruction it becomes
+			//     mov 0x0(%ecx), %eax // on i386
+			//     mov 0x0(%rcx), %rax // on amd64
+			// and a R_TLS_LE relocation, and so does not require a prefix.
+			if ctxt.Arch.Family == sys.I386 {
+				return 0x65 // GS
+			}
+			return 0x64 // FS
 		}
 
 	case REG_FS:
@@ -3472,7 +3507,7 @@ bas:
 	return
 
 bad:
-	ctxt.Diag("asmidx: bad address %d/%d/%d", scale, index, base)
+	ctxt.Diag("asmidx: bad address %d/%s/%s", scale, rconv(index), rconv(base))
 	ab.Put1(0)
 }
 
@@ -3484,9 +3519,8 @@ func (ab *AsmBuf) relput4(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog, a *obj.
 		if rel.Siz != 4 {
 			ctxt.Diag("bad reloc")
 		}
-		r := obj.Addrel(cursym)
-		*r = rel
-		r.Off = int32(p.Pc + int64(ab.Len()))
+		rel.Off = int32(p.Pc + int64(ab.Len()))
+		cursym.AddRel(ctxt, rel)
 	}
 
 	ab.PutInt32(int32(v))
@@ -3600,7 +3634,7 @@ func (ab *AsmBuf) asmandsz(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog, a *obj
 		goto bad
 	}
 
-	if a.Index != REG_NONE && a.Index != REG_TLS {
+	if a.Index != REG_NONE && a.Index != REG_TLS && !(REG_CS <= a.Index && a.Index <= REG_GS) {
 		base := int(a.Reg)
 		switch a.Name {
 		case obj.NAME_EXTERN,
@@ -3712,7 +3746,8 @@ func (ab *AsmBuf) asmandsz(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog, a *obj
 	}
 
 	if REG_AX <= base && base <= REG_R15 {
-		if a.Index == REG_TLS && !ctxt.Flag_shared && !isAndroid {
+		if a.Index == REG_TLS && !ctxt.Flag_shared && !isAndroid &&
+			ctxt.Headtype != objabi.Hwindows {
 			rel = obj.Reloc{}
 			rel.Type = objabi.R_TLS_LE
 			rel.Siz = 4
@@ -3744,9 +3779,8 @@ putrelv:
 			goto bad
 		}
 
-		r := obj.Addrel(cursym)
-		*r = rel
-		r.Off = int32(p.Pc + int64(ab.Len()))
+		rel.Off = int32(p.Pc + int64(ab.Len()))
+		cursym.AddRel(ctxt, rel)
 	}
 
 	ab.PutInt32(v)
@@ -3939,10 +3973,7 @@ func isax(a *obj.Addr) bool {
 		return true
 	}
 
-	if a.Index == REG_AX {
-		return true
-	}
-	return false
+	return a.Index == REG_AX
 }
 
 func subreg(p *obj.Prog, from int, to int) {
@@ -4069,6 +4100,16 @@ func (ab *AsmBuf) asmevex(ctxt *obj.Link, p *obj.Prog, rm, v, r, k *obj.Addr) {
 		if !evex.ZeroingEnabled() {
 			ctxt.Diag("unsupported zeroing: %v", p)
 		}
+		if k == nil {
+			// When you request zeroing you must specify a mask register.
+			// See issue 57952.
+			ctxt.Diag("mask register must be specified for .Z instructions: %v", p)
+		} else if k.Reg == REG_K0 {
+			// The mask register must not be K0. That restriction is already
+			// handled by the Yknot0 restriction in the opcode tables, so we
+			// won't ever reach here. But put something sensible here just in case.
+			ctxt.Diag("mask register must not be K0 for .Z instructions: %v", p)
+		}
 		evexZ = 1
 	}
 	switch {
@@ -4162,11 +4203,11 @@ func (ab *AsmBuf) asmvex(ctxt *obj.Link, rm, v, r *obj.Addr, vex, opcode uint8) 
 //	EVEX.R    : 1 bit | EVEX extension bit      | RxrEvex
 //
 // Examples:
+//
 //	REG_Z30 => 30
 //	REG_X15 => 15
 //	REG_R9  => 9
 //	REG_AX  => 0
-//
 func regIndex(r int16) int {
 	lower3bits := reg[r]
 	high4bit := regrex[r] & Rxr << 1
@@ -4231,6 +4272,11 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 		AVPGATHERQD,
 		AVPGATHERDQ,
 		AVPGATHERQQ:
+		if p.GetFrom3() == nil {
+			// gathers need a 3rd arg. See issue 58822.
+			ctxt.Diag("need a third arg for gather instruction: %v", p)
+			return
+		}
 		// AVX512 gather requires explicit K mask.
 		if p.GetFrom3().Reg >= REG_K0 && p.GetFrom3().Reg <= REG_K7 {
 			if !avx512gatherValid(ctxt, p) {
@@ -4251,30 +4297,23 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 	}
 
 	ft := int(p.Ft) * Ymax
-	var f3t int
 	tt := int(p.Tt) * Ymax
 
 	xo := obj.Bool2int(o.op[0] == 0x0f)
 	z := 0
-	var a *obj.Addr
-	var l int
-	var op int
-	var q *obj.Prog
-	var r *obj.Reloc
-	var rel obj.Reloc
-	var v int64
 
 	args := make([]int, 0, argListMax)
 	if ft != Ynone*Ymax {
 		args = append(args, ft)
 	}
 	for i := range p.RestArgs {
-		args = append(args, oclass(ctxt, p, &p.RestArgs[i])*Ymax)
+		args = append(args, oclass(ctxt, p, &p.RestArgs[i].Addr)*Ymax)
 	}
 	if tt != Ynone*Ymax {
 		args = append(args, tt)
 	}
 
+	var f3t int
 	for _, yt := range o.ytab {
 		// ytab matching is purely args-based,
 		// but AVX512 suffixes like "Z" or "RU_SAE" will
@@ -4393,7 +4432,7 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 			if z >= len(o.op) {
 				log.Fatalf("asmins bad table %v", p)
 			}
-			op = int(o.op[z])
+			op := int(o.op[z])
 			if op == 0x0f {
 				ab.Put1(byte(op))
 				z++
@@ -4651,10 +4690,10 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 				ab.asmando(ctxt, cursym, p, &p.To, int(o.op[z+1]))
 
 			case Zcallindreg:
-				r = obj.Addrel(cursym)
-				r.Off = int32(p.Pc)
-				r.Type = objabi.R_CALLIND
-				r.Siz = 0
+				cursym.AddRel(ctxt, obj.Reloc{
+					Type: objabi.R_CALLIND,
+					Off:  int32(p.Pc),
+				})
 				fallthrough
 
 			case Zo_m64:
@@ -4677,6 +4716,7 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 				ab.Put1(byte(vaddr(ctxt, p, &p.From, nil)))
 
 			case Z_ib, Zib_:
+				var a *obj.Addr
 				if yt.zcase == Zib_ {
 					a = &p.From
 				} else {
@@ -4696,7 +4736,7 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 				ab.rexflag |= regrex[p.To.Reg] & Rxb
 				ab.Put1(byte(op + reg[p.To.Reg]))
 				if o.prefix == Pe {
-					v = vaddr(ctxt, p, &p.From, nil)
+					v := vaddr(ctxt, p, &p.From, nil)
 					ab.PutInt16(int16(v))
 				} else {
 					ab.relput4(ctxt, cursym, p, &p.From)
@@ -4705,22 +4745,22 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 			case Zo_iw:
 				ab.Put1(byte(op))
 				if p.From.Type != obj.TYPE_NONE {
-					v = vaddr(ctxt, p, &p.From, nil)
+					v := vaddr(ctxt, p, &p.From, nil)
 					ab.PutInt16(int16(v))
 				}
 
 			case Ziq_rp:
-				v = vaddr(ctxt, p, &p.From, &rel)
-				l = int(v >> 32)
+				var rel obj.Reloc
+				v := vaddr(ctxt, p, &p.From, &rel)
+				l := int(v >> 32)
 				if l == 0 && rel.Siz != 8 {
 					ab.rexflag &^= (0x40 | Rxw)
 
 					ab.rexflag |= regrex[p.To.Reg] & Rxb
 					ab.Put1(byte(0xb8 + reg[p.To.Reg]))
 					if rel.Type != 0 {
-						r = obj.Addrel(cursym)
-						*r = rel
-						r.Off = int32(p.Pc + int64(ab.Len()))
+						rel.Off = int32(p.Pc + int64(ab.Len()))
+						cursym.AddRel(ctxt, rel)
 					}
 
 					ab.PutInt32(int32(v))
@@ -4733,9 +4773,8 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 					ab.rexflag |= regrex[p.To.Reg] & Rxb
 					ab.Put1(byte(op + reg[p.To.Reg]))
 					if rel.Type != 0 {
-						r = obj.Addrel(cursym)
-						*r = rel
-						r.Off = int32(p.Pc + int64(ab.Len()))
+						rel.Off = int32(p.Pc + int64(ab.Len()))
+						cursym.AddRel(ctxt, rel)
 					}
 
 					ab.PutInt64(v)
@@ -4747,6 +4786,7 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 				ab.Put1(byte(vaddr(ctxt, p, &p.From, nil)))
 
 			case Z_il, Zil_:
+				var a *obj.Addr
 				if yt.zcase == Zil_ {
 					a = &p.From
 				} else {
@@ -4754,13 +4794,14 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 				}
 				ab.Put1(byte(op))
 				if o.prefix == Pe {
-					v = vaddr(ctxt, p, a, nil)
+					v := vaddr(ctxt, p, a, nil)
 					ab.PutInt16(int16(v))
 				} else {
 					ab.relput4(ctxt, cursym, p, a)
 				}
 
 			case Zm_ilo, Zilo_m:
+				var a *obj.Addr
 				ab.Put1(byte(op))
 				if yt.zcase == Zilo_m {
 					a = &p.From
@@ -4771,7 +4812,7 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 				}
 
 				if o.prefix == Pe {
-					v = vaddr(ctxt, p, a, nil)
+					v := vaddr(ctxt, p, a, nil)
 					ab.PutInt16(int16(v))
 				} else {
 					ab.relput4(ctxt, cursym, p, a)
@@ -4781,7 +4822,7 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 				ab.Put1(byte(op))
 				ab.asmand(ctxt, cursym, p, &p.To, &p.To)
 				if o.prefix == Pe {
-					v = vaddr(ctxt, p, &p.From, nil)
+					v := vaddr(ctxt, p, &p.From, nil)
 					ab.PutInt16(int16(v))
 				} else {
 					ab.relput4(ctxt, cursym, p, &p.From)
@@ -4801,25 +4842,27 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 				} else {
 					ab.Put1(o.op[z+1])
 				}
-				r = obj.Addrel(cursym)
-				r.Off = int32(p.Pc + int64(ab.Len()))
-				r.Type = objabi.R_PCREL
-				r.Siz = 4
-				r.Add = p.To.Offset
+				cursym.AddRel(ctxt, obj.Reloc{
+					Type: objabi.R_PCREL,
+					Off:  int32(p.Pc + int64(ab.Len())),
+					Siz:  4,
+					Add:  p.To.Offset,
+				})
 				ab.PutInt32(0)
 
 			case Zcallind:
 				ab.Put2(byte(op), o.op[z+1])
-				r = obj.Addrel(cursym)
-				r.Off = int32(p.Pc + int64(ab.Len()))
+				typ := objabi.R_ADDR
 				if ctxt.Arch.Family == sys.AMD64 {
-					r.Type = objabi.R_PCREL
-				} else {
-					r.Type = objabi.R_ADDR
+					typ = objabi.R_PCREL
 				}
-				r.Siz = 4
-				r.Add = p.To.Offset
-				r.Sym = p.To.Sym
+				cursym.AddRel(ctxt, obj.Reloc{
+					Type: typ,
+					Off:  int32(p.Pc + int64(ab.Len())),
+					Siz:  4,
+					Sym:  p.To.Sym,
+					Add:  p.To.Offset,
+				})
 				ab.PutInt32(0)
 
 			case Zcall, Zcallduff:
@@ -4844,12 +4887,13 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 					ab.Put(bpduff1)
 				}
 				ab.Put1(byte(op))
-				r = obj.Addrel(cursym)
-				r.Off = int32(p.Pc + int64(ab.Len()))
-				r.Sym = p.To.Sym
-				r.Add = p.To.Offset
-				r.Type = objabi.R_CALL
-				r.Siz = 4
+				cursym.AddRel(ctxt, obj.Reloc{
+					Type: objabi.R_CALL,
+					Off:  int32(p.Pc + int64(ab.Len())),
+					Siz:  4,
+					Sym:  p.To.Sym,
+					Add:  p.To.Offset,
+				})
 				ab.PutInt32(0)
 
 				if yt.zcase == Zcallduff && ctxt.Arch.Family == sys.AMD64 {
@@ -4871,13 +4915,14 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 					}
 
 					ab.Put1(o.op[z+1])
-					r = obj.Addrel(cursym)
-					r.Off = int32(p.Pc + int64(ab.Len()))
-					r.Sym = p.To.Sym
-					// Note: R_CALL instead of R_PCREL. R_CALL is more permissive in that
-					// it can point to a trampoline instead of the destination itself.
-					r.Type = objabi.R_CALL
-					r.Siz = 4
+					cursym.AddRel(ctxt, obj.Reloc{
+						// Note: R_CALL instead of R_PCREL. R_CALL is more permissive in that
+						// it can point to a trampoline instead of the destination itself.
+						Type: objabi.R_CALL,
+						Off:  int32(p.Pc + int64(ab.Len())),
+						Siz:  4,
+						Sym:  p.To.Sym,
+					})
 					ab.PutInt32(0)
 					break
 				}
@@ -4886,7 +4931,7 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 				// TODO: Check in input, preserve in brchain.
 
 				// Fill in backward jump now.
-				q = p.To.Target()
+				q := p.To.Target()
 
 				if q == nil {
 					ctxt.Diag("jmp/branch/loop without target")
@@ -4895,7 +4940,7 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 				}
 
 				if p.Back&branchBackwards != 0 {
-					v = q.Pc - (p.Pc + 2)
+					v := q.Pc - (p.Pc + 2)
 					if v >= -128 && p.As != AXBEGIN {
 						if p.As == AJCXZL {
 							ab.Put1(0x67)
@@ -4940,12 +4985,12 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 				}
 
 			case Zbyte:
-				v = vaddr(ctxt, p, &p.From, &rel)
+				var rel obj.Reloc
+				v := vaddr(ctxt, p, &p.From, &rel)
 				if rel.Siz != 0 {
 					rel.Siz = uint8(op)
-					r = obj.Addrel(cursym)
-					*r = rel
-					r.Off = int32(p.Pc + int64(ab.Len()))
+					rel.Off = int32(p.Pc + int64(ab.Len()))
+					cursym.AddRel(ctxt, rel)
 				}
 
 				ab.Put1(byte(v))
@@ -5091,19 +5136,21 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 								// instruction.
 								dst := p.To.Reg
 								ab.Put1(0xe8)
-								r = obj.Addrel(cursym)
-								r.Off = int32(p.Pc + int64(ab.Len()))
-								r.Type = objabi.R_CALL
-								r.Siz = 4
-								r.Sym = ctxt.Lookup("__x86.get_pc_thunk." + strings.ToLower(rconv(int(dst))))
+								cursym.AddRel(ctxt, obj.Reloc{
+									Type: objabi.R_CALL,
+									Off:  int32(p.Pc + int64(ab.Len())),
+									Siz:  4,
+									Sym:  ctxt.Lookup("__x86.get_pc_thunk." + strings.ToLower(rconv(int(dst)))),
+								})
 								ab.PutInt32(0)
 
 								ab.Put2(0x8B, byte(2<<6|reg[dst]|(reg[dst]<<3)))
-								r = obj.Addrel(cursym)
-								r.Off = int32(p.Pc + int64(ab.Len()))
-								r.Type = objabi.R_TLS_IE
-								r.Siz = 4
-								r.Add = 2
+								cursym.AddRel(ctxt, obj.Reloc{
+									Type: objabi.R_TLS_IE,
+									Off:  int32(p.Pc + int64(ab.Len())),
+									Siz:  4,
+									Add:  2,
+								})
 								ab.PutInt32(0)
 							} else {
 								// ELF TLS base is 0(GS).
@@ -5126,19 +5173,6 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 							pp.From.Offset = 0
 							pp.From.Index = REG_NONE
 							ab.Put1(0x8B)
-							ab.asmand(ctxt, cursym, p, &pp.From, &p.To)
-
-						case objabi.Hwindows:
-							// Windows TLS base is always 0x14(FS).
-							pp.From = p.From
-
-							pp.From.Type = obj.TYPE_MEM
-							pp.From.Reg = REG_FS
-							pp.From.Offset = 0x14
-							pp.From.Index = REG_NONE
-							pp.From.Scale = 0
-							ab.Put2(0x64, // FS
-								0x8B)
 							ab.asmand(ctxt, cursym, p, &pp.From, &p.To)
 						}
 						break
@@ -5164,11 +5198,12 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 						ab.rexflag = Pw | (regrex[p.To.Reg] & Rxr)
 
 						ab.Put2(0x8B, byte(0x05|(reg[p.To.Reg]<<3)))
-						r = obj.Addrel(cursym)
-						r.Off = int32(p.Pc + int64(ab.Len()))
-						r.Type = objabi.R_TLS_IE
-						r.Siz = 4
-						r.Add = -4
+						cursym.AddRel(ctxt, obj.Reloc{
+							Type: objabi.R_TLS_IE,
+							Off:  int32(p.Pc + int64(ab.Len())),
+							Siz:  4,
+							Add:  -4,
+						})
 						ab.PutInt32(0)
 
 					case objabi.Hplan9:
@@ -5194,21 +5229,6 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 						pp.From.Scale = 0
 						ab.rexflag |= Pw
 						ab.Put2(0x64, // FS
-							0x8B)
-						ab.asmand(ctxt, cursym, p, &pp.From, &p.To)
-
-					case objabi.Hwindows:
-						// Windows TLS base is always 0x28(GS).
-						pp.From = p.From
-
-						pp.From.Type = obj.TYPE_MEM
-						pp.From.Name = obj.NAME_NONE
-						pp.From.Reg = REG_GS
-						pp.From.Offset = 0x28
-						pp.From.Index = REG_NONE
-						pp.From.Scale = 0
-						ab.rexflag |= Pw
-						ab.Put2(0x65, // GS
 							0x8B)
 						ab.asmand(ctxt, cursym, p, &pp.From, &p.To)
 					}
@@ -5310,7 +5330,7 @@ bad:
 		}
 	}
 
-	ctxt.Diag("invalid instruction: %v", p)
+	ctxt.Diag("%s: invalid instruction: %v", cursym.Name, p)
 }
 
 // byteswapreg returns a byte-addressable register (AX, BX, CX, DX)
@@ -5437,10 +5457,10 @@ func (ab *AsmBuf) asmins(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 
 // unpackOps4 extracts 4 operands from p.
 func unpackOps4(p *obj.Prog) (arg0, arg1, arg2, dst *obj.Addr) {
-	return &p.From, &p.RestArgs[0], &p.RestArgs[1], &p.To
+	return &p.From, &p.RestArgs[0].Addr, &p.RestArgs[1].Addr, &p.To
 }
 
 // unpackOps5 extracts 5 operands from p.
 func unpackOps5(p *obj.Prog) (arg0, arg1, arg2, arg3, dst *obj.Addr) {
-	return &p.From, &p.RestArgs[0], &p.RestArgs[1], &p.RestArgs[2], &p.To
+	return &p.From, &p.RestArgs[0].Addr, &p.RestArgs[1].Addr, &p.RestArgs[2].Addr, &p.To
 }

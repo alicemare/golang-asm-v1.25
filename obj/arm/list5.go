@@ -31,7 +31,7 @@
 package arm
 
 import (
-	"github.com/twitchyliquid64/golang-asm/obj"
+	"github.com/alicemare/golang-asm-v1.25/obj"
 	"fmt"
 )
 

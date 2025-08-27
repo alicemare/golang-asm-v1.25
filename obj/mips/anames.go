@@ -2,7 +2,7 @@
 
 package mips
 
-import "github.com/twitchyliquid64/golang-asm/obj"
+import "github.com/alicemare/golang-asm-v1.25/obj"
 
 var Anames = []string{
 	obj.A_ARCHSPECIFIC: "ABSD",
@@ -78,8 +78,12 @@ var Anames = []string{
 	"REM",
 	"REMU",
 	"RFE",
+	"ROTR",
+	"ROTRV",
 	"SC",
 	"SCV",
+	"SEB",
+	"SEH",
 	"SGT",
 	"SGTU",
 	"SLL",
@@ -101,6 +105,7 @@ var Anames = []string{
 	"TLBWR",
 	"TNE",
 	"WORD",
+	"WSBH",
 	"XOR",
 	"MOVV",
 	"MOVVL",
@@ -118,6 +123,8 @@ var Anames = []string{
 	"ADDVU",
 	"SUBV",
 	"SUBVU",
+	"DSBH",
+	"DSHD",
 	"TRUNCFV",
 	"TRUNCDV",
 	"TRUNCFW",

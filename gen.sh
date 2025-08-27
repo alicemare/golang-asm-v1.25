@@ -1,8 +1,9 @@
 #!/bin/bash
-# Downloads the Go sources, building the assembler into a standalone package.
+# Downloads the Go 1.25 sources, building the assembler into a standalone package.
+# Updated to handle Go 1.25 changes including internal/buildcfg package and API changes.
 
 OUT_DIR=$(pwd)
-BASE_PKG_PATH='github.com/twitchyliquid64/golang-asm'
+BASE_PKG_PATH='github.com/alicemare/golang-asm-v1.25'
 
 TMP_PATH=$(mktemp -d)
 cleanup () {
@@ -14,11 +15,14 @@ cleanup () {
 trap 'cleanup $LINENO' ERR EXIT
 
 cd $TMP_PATH
-git clone --depth 1 https://github.com/golang/go
+echo "Cloning Go 1.25 source..."
+git clone --depth 1 --branch go1.25.0 https://github.com/golang/go
 
-rm -rfv ${OUT_DIR}/{asm,dwarf,obj,objabi,src,sys,bio,goobj}
+echo "Cleaning existing directories..."
+rm -rfv ${OUT_DIR}/{asm,dwarf,obj,objabi,src,sys,bio,goobj,buildcfg,unsafeheader,abi,goarch,goexperiment,hash,bisect}
 
-# Move obj.
+# Move obj package
+echo "Processing obj package..."
 cp -rv ${TMP_PATH}/go/src/cmd/internal/obj ${OUT_DIR}/obj
 find ${OUT_DIR}/obj -type f -exec sed -i "s_\"cmd/internal/obj_\"${BASE_PKG_PATH}/obj_g" {} \;
 find ${OUT_DIR}/obj -type f -exec sed -i "s_\"cmd/internal/dwarf_\"${BASE_PKG_PATH}/dwarf_g" {} \;
@@ -26,7 +30,14 @@ find ${OUT_DIR}/obj -type f -exec sed -i "s_\"cmd/internal/src_\"${BASE_PKG_PATH
 find ${OUT_DIR}/obj -type f -exec sed -i "s_\"cmd/internal/sys_\"${BASE_PKG_PATH}/sys_g" {} \;
 find ${OUT_DIR}/obj -type f -exec sed -i "s_\"cmd/internal/bio_\"${BASE_PKG_PATH}/bio_g" {} \;
 find ${OUT_DIR}/obj -type f -exec sed -i "s_\"cmd/internal/goobj_\"${BASE_PKG_PATH}/goobj_g" {} \;
-# Move objabi.
+find ${OUT_DIR}/obj -type f -exec sed -i "s_\"internal/buildcfg_\"${BASE_PKG_PATH}/buildcfg_g" {} \;
+find ${OUT_DIR}/obj -type f -exec sed -i "s_\"internal/abi_\"${BASE_PKG_PATH}/abi_g" {} \;
+find ${OUT_DIR}/obj -type f -exec sed -i "s_\"internal/goarch_\"${BASE_PKG_PATH}/goarch_g" {} \;
+find ${OUT_DIR}/obj -type f -exec sed -i "s_\"cmd/internal/hash_\"${BASE_PKG_PATH}/hash_g" {} \;
+find ${OUT_DIR}/obj -type f -exec sed -i "s_\"internal/bisect_\"${BASE_PKG_PATH}/bisect_g" {} \;
+
+# Move objabi package
+echo "Processing objabi package..."
 cp -rv ${TMP_PATH}/go/src/cmd/internal/objabi ${OUT_DIR}/objabi
 find ${OUT_DIR}/objabi -type f -exec sed -i "s_\"cmd/internal/obj_\"${BASE_PKG_PATH}/obj_g" {} \;
 find ${OUT_DIR}/objabi -type f -exec sed -i "s_\"cmd/internal/dwarf_\"${BASE_PKG_PATH}/dwarf_g" {} \;
@@ -34,7 +45,12 @@ find ${OUT_DIR}/objabi -type f -exec sed -i "s_\"cmd/internal/src_\"${BASE_PKG_P
 find ${OUT_DIR}/objabi -type f -exec sed -i "s_\"cmd/internal/sys_\"${BASE_PKG_PATH}/sys_g" {} \;
 find ${OUT_DIR}/objabi -type f -exec sed -i "s_\"cmd/internal/bio_\"${BASE_PKG_PATH}/bio_g" {} \;
 find ${OUT_DIR}/objabi -type f -exec sed -i "s_\"cmd/internal/goobj_\"${BASE_PKG_PATH}/goobj_g" {} \;
-# Move arch.
+find ${OUT_DIR}/objabi -type f -exec sed -i "s_\"internal/buildcfg_\"${BASE_PKG_PATH}/buildcfg_g" {} \;
+find ${OUT_DIR}/objabi -type f -exec sed -i "s_\"internal/abi_\"${BASE_PKG_PATH}/abi_g" {} \;
+find ${OUT_DIR}/objabi -type f -exec sed -i "s_\"internal/bisect_\"${BASE_PKG_PATH}/bisect_g" {} \;
+
+# Move arch package
+echo "Processing arch package..."
 mkdir -pv ${OUT_DIR}/asm
 cp -rv ${TMP_PATH}/go/src/cmd/asm/internal/arch ${OUT_DIR}/asm/arch
 find ${OUT_DIR}/asm/arch -type f -exec sed -i "s_\"cmd/internal/obj_\"${BASE_PKG_PATH}/obj_g" {} \;
@@ -43,159 +59,113 @@ find ${OUT_DIR}/asm/arch -type f -exec sed -i "s_\"cmd/internal/src_\"${BASE_PKG
 find ${OUT_DIR}/asm/arch -type f -exec sed -i "s_\"cmd/internal/sys_\"${BASE_PKG_PATH}/sys_g" {} \;
 find ${OUT_DIR}/asm/arch -type f -exec sed -i "s_\"cmd/internal/bio_\"${BASE_PKG_PATH}/bio_g" {} \;
 find ${OUT_DIR}/asm/arch -type f -exec sed -i "s_\"cmd/internal/goobj_\"${BASE_PKG_PATH}/goobj_g" {} \;
-# Move goobj.
+find ${OUT_DIR}/asm/arch -type f -exec sed -i "s_\"internal/buildcfg_\"${BASE_PKG_PATH}/buildcfg_g" {} \;
+find ${OUT_DIR}/asm/arch -type f -exec sed -i "s_\"internal/abi_\"${BASE_PKG_PATH}/abi_g" {} \;
+
+# Move goobj package
+echo "Processing goobj package..."
 cp -rv ${TMP_PATH}/go/src/cmd/internal/goobj ${OUT_DIR}/goobj
 find ${OUT_DIR}/goobj -type f -exec sed -i "s_\"cmd/internal/obj_\"${BASE_PKG_PATH}/obj_g" {} \;
 find ${OUT_DIR}/goobj -type f -exec sed -i "s_\"cmd/internal/bio_\"${BASE_PKG_PATH}/bio_g" {} \;
 find ${OUT_DIR}/goobj -type f -exec sed -i "s_\"internal/unsafeheader_\"${BASE_PKG_PATH}/unsafeheader_g" {} \;
+find ${OUT_DIR}/goobj -type f -exec sed -i "s_\"internal/buildcfg_\"${BASE_PKG_PATH}/buildcfg_g" {} \;
+find ${OUT_DIR}/goobj -type f -exec sed -i "s_\"internal/abi_\"${BASE_PKG_PATH}/abi_g" {} \;
 
-# Move bio.
+# Move bio package
+echo "Processing bio package..."
 cp -rv ${TMP_PATH}/go/src/cmd/internal/bio ${OUT_DIR}/bio
-# Move unsafeheader.
+
+# Move unsafeheader package
+echo "Processing unsafeheader package..."
 cp -rv ${TMP_PATH}/go/src/internal/unsafeheader ${OUT_DIR}/unsafeheader
-# Move dwarf.
+
+# Move dwarf package
+echo "Processing dwarf package..."
 cp -rv ${TMP_PATH}/go/src/cmd/internal/dwarf ${OUT_DIR}/dwarf
 find ${OUT_DIR}/dwarf -type f -exec sed -i "s_\"cmd/internal/obj_\"${BASE_PKG_PATH}/obj_g" {} \;
-# Move src.
+find ${OUT_DIR}/dwarf -type f -exec sed -i "s_\"cmd/internal/src_\"${BASE_PKG_PATH}/src_g" {} \;
+find ${OUT_DIR}/dwarf -type f -exec sed -i "s_\"internal/buildcfg_\"${BASE_PKG_PATH}/buildcfg_g" {} \;
+
+# Move src package
+echo "Processing src package..."
 cp -rv ${TMP_PATH}/go/src/cmd/internal/src ${OUT_DIR}/src
-# Move sys.
+
+# Move sys package
+echo "Processing sys package..."
 cp -rv ${TMP_PATH}/go/src/cmd/internal/sys ${OUT_DIR}/sys
+find ${OUT_DIR}/sys -type f -exec sed -i "s_\"internal/goarch_\"${BASE_PKG_PATH}/goarch_g" {} \;
 
+# NEW: Move buildcfg package (Go 1.25 addition)
+echo "Processing buildcfg package..."
+cp -rv ${TMP_PATH}/go/src/internal/buildcfg ${OUT_DIR}/buildcfg
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s_\"internal/buildcfg_\"${BASE_PKG_PATH}/buildcfg_g" {} \;
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s_\"internal/goexperiment_\"${BASE_PKG_PATH}/goexperiment_g" {} \;
 
-# Rewrite identifiers for generated (at build time) constants.
+# NEW: Move internal/abi package (Go 1.25 dependency)
+echo "Processing abi package..."
+cp -rv ${TMP_PATH}/go/src/internal/abi ${OUT_DIR}/abi
+find ${OUT_DIR}/abi -type f -exec sed -i "s_\"internal/abi_\"${BASE_PKG_PATH}/abi_g" {} \;
+find ${OUT_DIR}/abi -type f -exec sed -i "s_\"internal/goarch_\"${BASE_PKG_PATH}/goarch_g" {} \;
+
+# NEW: Move internal/goarch package (Go 1.25 dependency)
+echo "Processing goarch package..."
+cp -rv ${TMP_PATH}/go/src/internal/goarch ${OUT_DIR}/goarch
+find ${OUT_DIR}/goarch -type f -exec sed -i "s_\"internal/goarch_\"${BASE_PKG_PATH}/goarch_g" {} \;
+
+# NEW: Move internal/goexperiment package (Go 1.25 dependency)
+echo "Processing goexperiment package..."
+cp -rv ${TMP_PATH}/go/src/internal/goexperiment ${OUT_DIR}/goexperiment
+find ${OUT_DIR}/goexperiment -type f -exec sed -i "s_\"internal/goexperiment_\"${BASE_PKG_PATH}/goexperiment_g" {} \;
+
+# NEW: Move cmd/internal/hash package (Go 1.25 dependency)
+echo "Processing hash package..."
+cp -rv ${TMP_PATH}/go/src/cmd/internal/hash ${OUT_DIR}/hash
+find ${OUT_DIR}/hash -type f -exec sed -i "s_\"cmd/internal/hash_\"${BASE_PKG_PATH}/hash_g" {} \;
+
+# NEW: Move internal/bisect package (Go 1.25 dependency)
+echo "Processing bisect package..."
+cp -rv ${TMP_PATH}/go/src/internal/bisect ${OUT_DIR}/bisect
+find ${OUT_DIR}/bisect -type f -exec sed -i "s_\"internal/bisect_\"${BASE_PKG_PATH}/bisect_g" {} \;
+
+# Rewrite identifiers for generated (at build time) constants in objabi
+echo "Rewriting build-time constants in objabi..."
 find ${OUT_DIR}/objabi -type f -exec sed -i "s/stackGuardMultiplierDefault/1/g" {} \;
 find ${OUT_DIR}/objabi -type f -exec sed -i "s/defaultGOOS/\"linux\"/g" {} \;
 find ${OUT_DIR}/objabi -type f -exec sed -i "s/defaultGOARCH/\"$(go env GOARCH)\"/g" {} \;
-
 find ${OUT_DIR}/objabi -type f -exec sed -i "s/defaultGO386/\"\"/g" {} \;
 find ${OUT_DIR}/objabi -type f -exec sed -i "s/defaultGOARM/\"7\"/g" {} \;
 find ${OUT_DIR}/objabi -type f -exec sed -i "s/defaultGOMIPS64/\"hardfloat\"/g" {} \;
 find ${OUT_DIR}/objabi -type f -exec sed -i "s/defaultGOMIPS/\"hardfloat\"/g" {} \;
 find ${OUT_DIR}/objabi -type f -exec sed -i "s/defaultGOPPC64/\"power8\"/g" {} \;
 find ${OUT_DIR}/objabi -type f -exec sed -i "s/defaultGO_LDSO/\"\"/g" {} \;
-find ${OUT_DIR}/objabi -type f -exec sed -i "s/= version/= \"\"/g" {} \;
+# More specific replacement for version variable assignment
+find ${OUT_DIR}/objabi -type f -exec sed -i "s/\bversion\b/\"\"/g" {} \;
 find ${OUT_DIR}/objabi -type f -exec sed -i "s/defaultGO_EXTLINK_ENABLED/\"\"/g" {} \;
-find ${OUT_DIR}/objabi -type f -exec sed -i "s/goexperiment/\"\"/g" {} \;
+# More specific replacement for goexperiment in context
+find ${OUT_DIR}/objabi -type f -exec sed -i "s/\bgoexperiment\b/\"\"/g" {} \;
 
+# NEW: Rewrite build-time constants in buildcfg
+echo "Rewriting build-time constants in buildcfg..."
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/defaultGOARCH/\"$(go env GOARCH)\"/g" {} \;
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/defaultGOOS/\"linux\"/g" {} \;
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/DefaultGORISCV64/\"rva20u64\"/g" {} \;
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/DefaultGOFIPS140/\"off\"/g" {} \;
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/DefaultGO386/\"\"/g" {} \;
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/defaultGO_LDSO/\"\"/g" {} \;
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/= version/= \"\"/g" {} \;
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/DefaultGOAMD64/\"v1\"/g" {} \;
+# IMPORTANT: Replace DefaultGOARM64 BEFORE DefaultGOARM to avoid substring conflicts
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/DefaultGOARM64/\"v8.0\"/g" {} \;
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/DefaultGOARM/\"7\"/g" {} \;
+# IMPORTANT: Replace DefaultGOMIPS64 BEFORE DefaultGOMIPS to avoid substring conflicts
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/DefaultGOMIPS64/\"hardfloat\"/g" {} \;
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/DefaultGOMIPS/\"hardfloat\"/g" {} \;
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/DefaultGOPPC64/\"power8\"/g" {} \;
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/defaultGO_EXTLINK_ENABLED/\"\"/g" {} \;
+find ${OUT_DIR}/buildcfg -type f -exec sed -i "s/defaultGOEXPERIMENT/\"\"/g" {} \;
 
-# Remove tests (they have package dependencies we could do without).
+# Remove tests (they have package dependencies we could do without)
+echo "Removing test files..."
 find ${OUT_DIR} -name "*_test.go" -type f -delete
 
-# Write README.
-cat > ${OUT_DIR}/README.md << "EOF"
-# golang-asm
-
-A mirror of the assembler from the Go compiler, with import paths re-written for the assembler to be functional as a standalone library.
-
-License as per the Go project.
-
-# Status
-
-Works, but expect to dig into the assembler godoc's to work out what to set different parameters of `obj.Prog` to get it to generate specific instructions.
-
-# Example
-
-Demonstrates assembly of a NOP & an ADD instruction on x86-64.
-
-```go
-
-package main
-
-import (
-	"fmt"
-
-	asm "github.com/twitchyliquid64/golang-asm"
-	"github.com/twitchyliquid64/golang-asm/obj"
-	"github.com/twitchyliquid64/golang-asm/obj/x86"
-)
-
-func noop(builder *asm.Builder) *obj.Prog {
-	prog := builder.NewProg()
-	prog.As = x86.ANOPL
-	prog.From.Type = obj.TYPE_REG
-	prog.From.Reg = x86.REG_AX
-	return prog
-}
-
-func addImmediateByte(builder *asm.Builder, in int32) *obj.Prog {
-	prog := builder.NewProg()
-	prog.As = x86.AADDB
-	prog.To.Type = obj.TYPE_REG
-	prog.To.Reg = x86.REG_AL
-	prog.From.Type = obj.TYPE_CONST
-	prog.From.Offset = int64(in)
-	return prog
-}
-
-func movImmediateByte(builder *asm.Builder, reg int16, in int32) *obj.Prog {
-	prog := builder.NewProg()
-	prog.As = x86.AMOVB
-	prog.To.Type = obj.TYPE_REG
-	prog.To.Reg = reg
-	prog.From.Type = obj.TYPE_CONST
-	prog.From.Offset = int64(in)
-	return prog
-}
-
-func main() {
-	b, _ := asm.NewBuilder("amd64", 64)
-	b.AddInstruction(noop(b))
-	b.AddInstruction(movImmediateByte(b, x86.REG_AL, 16))
-	b.AddInstruction(addImmediateByte(b, 16))
-	fmt.Printf("Bin: %x\n", b.Assemble())
-}
-
-```
-
-# Working out the parameters of `obj.Prog`
-
-This took me some time to work out, so I'll write a bit here.
-
-## Use these references
-
- * `obj.Prog` - [godoc](https://godoc.org/github.com/golang/go/src/cmd/internal/obj#Prog)
-  * Some instructions (like NOP, JMP) are abstract per-platform & can be found [here](https://godoc.org/github.com/golang/go/src/cmd/internal/obj#As)
-
- * (for amd64) `x86 pkg-constants` - [registers & instructions](https://godoc.org/github.com/golang/go/src/cmd/internal/obj/x86#pkg-constant)
-
-## Instruction constants have a naming scheme
-
-Instructions are defined as constants in the package for the relavant architecture, and have an 'A' prefix and a size suffix.
-
-For example, the MOV instruction for 64 bits of data is `AMOVQ` (well, at least in amd64).
-
-## Search the go source for usage of a given instruction
-
-For example, if I wanted to work out how to emit the MOV instruction for 64bits, I would search the go source on github for `AMOVQ` or `x86.AMOVQ`. Normally, you see find a few examples where the compiler backend fills in a `obj.Prog` structure, and you follow it's lead.
-EOF
-
-# Write license file.
-cat > ${OUT_DIR}/LICENSE << "EOF"
-Copyright (c) 2009 The Go Authors. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
-
-   * Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-   * Redistributions in binary form must reproduce the above
-copyright notice, this list of conditions and the following disclaimer
-in the documentation and/or other materials provided with the
-distribution.
-   * Neither the name of Google Inc. nor the names of its
-contributors may be used to endorse or promote products derived from
-this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOTto be standalone
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-EOF
+echo "Generation complete!"
